@@ -5,7 +5,7 @@ weighting_program
 Created on Sat Oct 16 10:38:05 2021
 
 @author: liang-yi
-以109.12內政部戶政司釋出之人口資料為底冊
+以109.12內政部戶政司釋出之人口資料為底冊產出加權權值
 """
 
 import os
@@ -19,14 +19,18 @@ from decimal import Decimal, ROUND_HALF_UP
 os.chdir(os.getcwd())
 
 #### 先準備母體底冊
-# 性別：女0男1
-sexN = pd.Series([0.504, 0.496], index=[0, 1])
-# 年齡：20-29: 1; 30-39: 2; 40-49: 3, 50-59: 4; 60以上: 5  
-ageN = pd.Series([0.16, 0.18, 0.19, 0.19, 0.28], index=[1, 2, 3, 4, 5])
-# 教育程度: 國小及以下: 1; 國、初中: 2; 高中、職: 3, 大專: 4, 研究所及以上: 5
-eduN = pd.Series([0.12, 0.12, 0.28, 0.4, 0.08], index=[1, 2, 3, 4, 5])
-# 地區: 北北基-1; 桃竹苗-2; 中彰投-3; 雲嘉南-4; 高屏-5; 宜花東-6; 澎金連-7
-areaN = pd.Series([0.3, 0.16, 0.19, 0.14, 0.15, 0.04, 0.01], index=[1, 2, 3, 4, 5, 6, 7])
+def sexN():
+    # 性別：女0男1
+    return pd.Series([0.504, 0.496], index=[0, 1])
+def ageN():
+    # 年齡：20-29: 1; 30-39: 2; 40-49: 3, 50-59: 4; 60以上: 5  
+    return pd.Series([0.16, 0.18, 0.19, 0.19, 0.28], index=[1, 2, 3, 4, 5])
+def eduN():
+    # 教育程度: 國小及以下: 1; 國、初中: 2; 高中、職: 3, 大專: 4, 研究所及以上: 5
+    return pd.Series([0.12, 0.12, 0.28, 0.4, 0.08], index=[1, 2, 3, 4, 5])
+def areaN():
+    # 地區: 北北基-1; 桃竹苗-2; 中彰投-3; 雲嘉南-4; 高屏-5; 宜花東-6; 澎金連-7
+    return pd.Series([0.3, 0.16, 0.19, 0.14, 0.15, 0.04, 0.01], index=[1, 2, 3, 4, 5, 6, 7])
 
 ### 新增權值變項'weight'
 def add_weight(df):
@@ -103,7 +107,7 @@ def chi_test(df, var:str, sex_na = [-1], age5_na = [-1], edu_na = [-1], area_na 
         n = pd.Series([n_N(df, 'SEX', 0, sex_na)[0],
                        n_N(df, 'SEX', 1, sex_na)[0]],
                       index=[0,1])
-        N = sexN * roundupN(sum(df[(~df['SEX'].isin(sex_na))]['weight']))
+        N = sexN() * roundupN(sum(df[(~df['SEX'].isin(sex_na))]['weight']))
         
         chi2, p = chisquare(n, f_exp= N)
         if p < 0.05:
@@ -120,7 +124,7 @@ def chi_test(df, var:str, sex_na = [-1], age5_na = [-1], edu_na = [-1], area_na 
                        n_N(df, 'AGE5', 4, age5_na)[0],
                        n_N(df, 'AGE5', 5)[0]],
                       index=[1,2,3,4,5])
-        N = ageN * roundupN(sum(df[(~df['AGE5'].isin(age5_na))]['weight']))
+        N = ageN() * roundupN(sum(df[(~df['AGE5'].isin(age5_na))]['weight']))
         
         chi2, p = chisquare(n, f_exp= N)
         if p < 0.05:
@@ -137,7 +141,7 @@ def chi_test(df, var:str, sex_na = [-1], age5_na = [-1], edu_na = [-1], area_na 
                        n_N(df, 'EDU', 4, edu_na)[0],
                        n_N(df, 'EDU', 5, edu_na)[0]],
                       index=[1,2,3,4,5])
-        N = eduN * roundupN(sum(df[(~df['EDU'].isin(edu_na))]['weight']))
+        N = eduN() * roundupN(sum(df[(~df['EDU'].isin(edu_na))]['weight']))
         
         chi2, p = chisquare(n, f_exp= N)
         if p < 0.05:
@@ -156,7 +160,7 @@ def chi_test(df, var:str, sex_na = [-1], age5_na = [-1], edu_na = [-1], area_na 
                        n_N(df, 'AREA', 6, area_na)[0],
                        n_N(df, 'AREA', 7, area_na)[0]],
                       index=[1,2,3,4,5,6,7])
-        N = areaN * roundupN(sum(df[(~df['AREA'].isin(edu_na))]['weight']))
+        N = areaN() * roundupN(sum(df[(~df['AREA'].isin(edu_na))]['weight']))
         
         chi2, p = chisquare(n, f_exp= N)
         if p < 0.05:
@@ -181,9 +185,9 @@ def raking_w(df, sex_na = [-1], age5_na = [-1], edu_na = [-1], area_na = [-1]):
                 
                 for i in df.index:
                     if df['SEX'].loc[i] == 0:
-                        df['weight'].loc[i] = df['weight'].loc[i] * sexN.loc[0] * n/n0
+                        df['weight'].loc[i] = df['weight'].loc[i] * sexN().loc[0] * n/n0
                     if df['SEX'].loc[i] == 1:
-                        df['weight'].loc[i] = df['weight'].loc[i] * sexN.loc[1] * n/n1
+                        df['weight'].loc[i] = df['weight'].loc[i] * sexN().loc[1] * n/n1
                 c += 1
                 continue
             
@@ -197,15 +201,15 @@ def raking_w(df, sex_na = [-1], age5_na = [-1], edu_na = [-1], area_na = [-1]):
                 
                 for i in df.index:
                     if df['AGE5'].loc[i] == 1:
-                        df['weight'].loc[i] = df['weight'].loc[i] * ageN.loc[1] * n/n1
+                        df['weight'].loc[i] = df['weight'].loc[i] * ageN().loc[1] * n/n1
                     if df['AGE5'].loc[i] == 2:
-                        df['weight'].loc[i] = df['weight'].loc[i] * ageN.loc[2] * n/n2
+                        df['weight'].loc[i] = df['weight'].loc[i] * ageN().loc[2] * n/n2
                     if df['AGE5'].loc[i] == 3:
-                        df['weight'].loc[i] = df['weight'].loc[i] * ageN.loc[3] * n/n3
+                        df['weight'].loc[i] = df['weight'].loc[i] * ageN().loc[3] * n/n3
                     if df['AGE5'].loc[i] == 4:
-                        df['weight'].loc[i] = df['weight'].loc[i] * ageN.loc[4] * n/n4
+                        df['weight'].loc[i] = df['weight'].loc[i] * ageN().loc[4] * n/n4
                     if df['AGE5'].loc[i] == 5:
-                        df['weight'].loc[i] = df['weight'].loc[i] * ageN.loc[5] * n/n5
+                        df['weight'].loc[i] = df['weight'].loc[i] * ageN().loc[5] * n/n5
                 c += 1
                 continue
             
@@ -219,15 +223,15 @@ def raking_w(df, sex_na = [-1], age5_na = [-1], edu_na = [-1], area_na = [-1]):
                 
                 for i in df.index:
                     if df['EDU'].loc[i] == 1:
-                        df['weight'].loc[i] = df['weight'].loc[i] * eduN.loc[1] * n/n1
+                        df['weight'].loc[i] = df['weight'].loc[i] * eduN().loc[1] * n/n1
                     if df['EDU'].loc[i] == 2:
-                        df['weight'].loc[i] = df['weight'].loc[i] * eduN.loc[2] * n/n2
+                        df['weight'].loc[i] = df['weight'].loc[i] * eduN().loc[2] * n/n2
                     if df['EDU'].loc[i] == 3:
-                        df['weight'].loc[i] = df['weight'].loc[i] * eduN.loc[3] * n/n3
+                        df['weight'].loc[i] = df['weight'].loc[i] * eduN().loc[3] * n/n3
                     if df['EDU'].loc[i] == 4:
-                        df['weight'].loc[i] = df['weight'].loc[i] * eduN.loc[4] * n/n4
+                        df['weight'].loc[i] = df['weight'].loc[i] * eduN().loc[4] * n/n4
                     if df['EDU'].loc[i] == 5:
-                        df['weight'].loc[i] = df['weight'].loc[i] * eduN.loc[5] * n/n5
+                        df['weight'].loc[i] = df['weight'].loc[i] * eduN().loc[5] * n/n5
                 c += 1
                 continue
             
@@ -243,19 +247,19 @@ def raking_w(df, sex_na = [-1], age5_na = [-1], edu_na = [-1], area_na = [-1]):
                 
                 for i in df.index:
                     if df['AREA'].loc[i] == 1:
-                        df['weight'].loc[i] = df['weight'].loc[i] * areaN.loc[1] * n/n1
+                        df['weight'].loc[i] = df['weight'].loc[i] * areaN().loc[1] * n/n1
                     if df['AREA'].loc[i] == 2:
-                        df['weight'].loc[i] = df['weight'].loc[i] * areaN.loc[2] * n/n2
+                        df['weight'].loc[i] = df['weight'].loc[i] * areaN().loc[2] * n/n2
                     if df['AREA'].loc[i] == 3:
-                        df['weight'].loc[i] = df['weight'].loc[i] * areaN.loc[3] * n/n3
+                        df['weight'].loc[i] = df['weight'].loc[i] * areaN().loc[3] * n/n3
                     if df['AREA'].loc[i] == 4:
-                        df['weight'].loc[i] = df['weight'].loc[i] * areaN.loc[4] * n/n4
+                        df['weight'].loc[i] = df['weight'].loc[i] * areaN().loc[4] * n/n4
                     if df['AREA'].loc[i] == 5:
-                        df['weight'].loc[i] = df['weight'].loc[i] * areaN.loc[5] * n/n5
+                        df['weight'].loc[i] = df['weight'].loc[i] * areaN().loc[5] * n/n5
                     if df['AREA'].loc[i] == 6:
-                        df['weight'].loc[i] = df['weight'].loc[i] * areaN.loc[6] * n/n6
+                        df['weight'].loc[i] = df['weight'].loc[i] * areaN().loc[6] * n/n6
                     if df['AREA'].loc[i] == 7:
-                        df['weight'].loc[i] = df['weight'].loc[i] * areaN.loc[7] * n/n7
+                        df['weight'].loc[i] = df['weight'].loc[i] * areaN().loc[7] * n/n7
                 c += 1
                 continue
     return df.to_csv('加權後資料檔.csv', encoding='utf_8_sig', index = False)
